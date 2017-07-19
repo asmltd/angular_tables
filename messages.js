@@ -1,5 +1,9 @@
 /**
  * Created by hariharaselvam on 7/27/16.
+ * Custom alert message from bootstrap models
+ * Automatic dismissed
+ * message.alert(true|false|null, "Message to display")
+ *
  */
 window[appName].factory('message', function () {
     return {
