@@ -70,7 +70,7 @@
             "model": "SZ104"
         }
     ],
-    "plt": "0.0100",
+
     "number_of_rows": 2
 }
  *
@@ -106,58 +106,61 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
 
 
             $scope.get_data = function () {
+                /* Do nothing if API is empty */
                 if ($scope.config.api == "" || $scope.config.api == undefined) {
                     return false;
                 }
+                /* Show loader image before API request */
                 $scope.loaded = false;
+                /* API URL generated with options */
+                $scope.api = $scope.config.api;
+                $scope.api = $scope.api + "?page=" + $scope.pagination.current; /* Page number */
+                $scope.api = $scope.api +"&page_limit=" + $scope.itemperpage; /* Number of rows to return */
+                $scope.api = $scope.api + "&sort=" + $scope.sort; /* Column name to be sorted */
+                $scope.api = $scope.api + "&order=" + $scope.order; /* Ascending Descending order */
+                $scope.api = $scope.api + "&filter=" + $scope.filter; /* Search text */
 
-                $scope.api = $scope.config.api + "?page=" + $scope.pagination.current + "&page_limit=" + $scope.itemperpage;
-                $scope.api = $scope.api + "&sort=" + $scope.sort + "&order=" + $scope.order + "&filter=" + $scope.filter;
-
-
+                /* Call API and convert data to table */
                 http.Requests('get', $scope.api, '').success(function (response) {
-                    wmslib.log_plt($scope.config.api, response);
-                    $scope.loaded = true;
-                    $scope.list = response.result;
-                    $scope.items = response.total_rows;
-                    $scope.start = ($scope.itemperpage * ($scope.pagination.current - 1)) + 1;
-                    $scope.end = $scope.start + response.number_of_rows - 1;
-                    $scope.export = $scope.config.api + "?export=true&page=1&page_limit=" + $scope.items;
-                    $scope.pages = generatePagesArray($scope.pagination.current, $scope.items, $scope.itemperpage, 7);
-                    $scope.pagination.last = $scope.pages[$scope.pages.length - 1];
+
+                    $scope.loaded = true; /* to hide loading icon over the table */
+                    $scope.list = response.result; /* list of dictionary from the API Response */
+                    $scope.items = response.total_rows; /* Total number of rows in DB */
+                    $scope.start = ($scope.itemperpage * ($scope.pagination.current - 1)) + 1; /* Starting point of row in data table */
+                    $scope.end = $scope.start + response.number_of_rows - 1; /* Ending point of row in data table */
+                    $scope.export = $scope.config.api + "?export=true&page=1&page_limit=" + $scope.items; /* Export URL */
+                    $scope.pages = generatePagesArray($scope.pagination.current, $scope.items, $scope.itemperpage, 7); /* list of page numbers */
+                    $scope.pagination.last = $scope.pages[$scope.pages.length - 1]; /* Last number of page*/
 
 
-                    if ($scope.config.type == "uesession_history") {
+                    /*if ($scope.config.type == "uesession_history") {
 
                         for (i = 0; i < $scope.list.length; i++) {
                             var ls = new Date($scope.list[i].last_seen);
                             var fs = new Date($scope.list[i].first_seen);
                             var seconds = (ls - fs);
-                            $scope.list[i].session_time = wmslib.uptime_convertion(seconds);
+                            $scope.list[i].session_time = seconds;
 
                         }
-                    }
-                    $scope.highlight();
+                    }*/
+                    /*
+                    * Write custom format for table types here
+                    * */
+                    $scope.highlight(); /* Highlight */
 
 
                 });
 
 
             };
-            $scope.showtable_menu = function () {
-                bootbox.dialog({
-                    title: $scope.title + " Table",
-                    message: "This is " + $scope.title + " table"
-                });
 
-            };
+            /* for ng-bind-html with highlight */
             $scope.to_trusted = function (html_code) {
                 var html = "";
                 try {
                     html = $sce.trustAsHtml(html_code)
                 }
                 catch (e) {
-                    //console.log(html_code);
                     html = html_code
                 }
                 return html;
@@ -165,10 +168,11 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
 
             $scope.highlight = function () {
                 if ($scope.filter != "" && $scope.filter != undefined) {
-                    //var regEx = new RegExp($scope.filter, "ig");
+
                     for (i = 0; i < $scope.list.length; i++) {
                         var columns = Object.keys($scope.list[i]);
-                        var no_highlight = ['id','record_id','value', 'codename', 'status_color', 'content', 'status', 'tx_rate', 'rx_rate', 'acked_by', 'acked_comment', 'acked_date', 'summary'];
+                        /* To skip columns form highlight */
+                        var no_highlight = ['id','record_id', 'codename', 'color', 'content', 'status', 'tx_rate', 'rx_rate'];
 
                         for (j = 0; j < columns.length; j++) {
                             if (no_highlight.indexOf(columns[j]) != -1) {
@@ -185,7 +189,7 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
                                     var regEx = new RegExp(keys[k], "ig");
                                     var to_match = $scope.list[i][columns[j]].replace(/<span class='highlight'>(.*?)<\/span>/g, '');
                                     var matches = to_match.match(regEx);
-                                    //var matches = $scope.list[i][columns[j]].match(regEx);
+
                                     console.log("match " + matches);
                                     if (matches != null) {
                                         console.log("key " + keys[j]);
@@ -197,16 +201,7 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
 
                                 }
 
-                                /*
-                                 var matches = $scope.list[i][columns[j]].match(regEx);
-                                 if (matches == null) {
-                                 continue;
-                                 }
 
-                                 if (matches.length > 0) {
-                                 var highlight = "<span class='highlight'>$&</span>";
-                                 $scope.list[i][columns[j]] = $scope.list[i][columns[j]].replace(regEx, highlight);
-                                 }*/
                             }
 
                         }
@@ -218,34 +213,17 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
 
             };
 
+            /* Initiation of data table */
             $scope.default_page = function () {
                 $scope.sort = "";
-                if ($scope.config.type == "uedevices" || $scope.config.type == "access_point") {
-                    $scope.sort = "hostname";
-                }
-
-
                 $scope.order = "";
                 $scope.filter = "";
-                if ($scope.config.type == "datalake" || $scope.config.type == "events") {
-                    $scope.sort = "timestamp";
-                    $scope.order = "desc";
-                }
-                if ($scope.config.type == "alarms") {
-                    $scope.sort = "opened";
-                    $scope.order = "desc";
-                }
-                if ($scope.config.type == "agent_management") {
-                    $scope.sort = "version";
-                    $scope.order = "desc";
-                }
-                if ($scope.config.type == "wms_settings") {
-                    $scope.sort = "option";
-                }
+
                 if ($scope.config.filter != undefined) {
                     $scope.filter = $scope.config.filter;
                 }
                 $scope.itemperpage = 10;
+
                 if ($scope.config.itemperpage != undefined) {
                     $scope.itemperpage = $scope.config.itemperpage;
                 }
@@ -255,6 +233,7 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
 
             };
 
+            /* Page change function */
             $scope.setCurrent = function (pagenum) {
                 if (pagenum == '...') {
                     return false;
@@ -262,15 +241,20 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
                 $scope.pagination.current = pagenum;
                 $scope.get_data();
             };
+
+            /* Number of rows change function */
             $scope.setSize = function () {
                 $scope.pagination.current = 1;
                 $scope.get_data();
             };
+
+            /* Go to fist page function */
             $scope.firstPage = function () {
                 $scope.pagination.current = 1;
                 $scope.get_data();
             };
 
+            /* Sort data by column name function */
             $scope.colum_sort = function (colname) {
                 if ($scope.sort == colname) {
                     if ($scope.order == "") {
@@ -285,6 +269,8 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
                 $scope.sort = colname;
                 $scope.get_data();
             };
+
+            /* Change icon at column name as per sorting */
             $scope.get_col_icon = function (colname) {
 
                 if ($scope.sort == colname) {
@@ -304,18 +290,13 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
 
             };
 
+            /* Draw columns as per type of table */
             $scope.get_template = function () {
 
                 return "/media/js/directive/templates/tables/" + $scope.config.type + ".table.html?v=" + window.version;
             };
 
-            /* for custom dashboard's object drag and drop option */
-            $scope.get_style = function () {
-                if ($scope.config.db_id != undefined) {
-                    return {cursor: "move"};
-                }
-                return {}
-            };
+
             /* for loading time */
             $scope.get_opacity = function () {
                 if (!$scope.loaded) {
@@ -324,170 +305,12 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
                 return {}
             };
 
-            /* for nodes table */
-            $scope.toggle_data = function () {
-                if ($scope.toggle_status == true) {
-                    $scope.toggle_status = false;
-                    $scope.toggle_button = "fa-toggle-off";
-                    $scope.toggle_tooltip = "Show Removed";
-                } else {
-                    $scope.toggle_status = true;
-                    $scope.toggle_button = "fa-toggle-on";
-                    $scope.toggle_tooltip = "Hide Removed";
-                }
-                $scope.get_data();
 
-            };
 
             $scope.default_page();
 
-            /* for client devices operating system icons */
-            $scope.get_os = function (os) {
-                if (os == null || os == undefined) {
-                    os = "unknown";
-                }
 
-                var os_name = os.replace("<span class='highlight'>", "");
-                var os_name = os_name.replace("</span>", "");
-                return wmslib.icon_for_os(os_name);
-            };
-
-            /* for pin to dashboard option */
-            $scope.pin_table = function () {
-                pin.popup($scope.config.api, $scope.config.type);
-            };
-
-            /* for Data Management */
-            $scope.reprocess = function (link) {
-                http.Requests('get', link, '');
-                $scope.get_data();
-            };
-
-            /* for Alarms */
-            $scope.acknowledge = function (id) {
-
-                bootbox.prompt("Acknowledgement Comment", function (result) {
-                    if (result != null && result != '' && result != undefined) {
-
-                        $scope.update_and_call_back('patch', '/api/alarm/' + id + '/', {
-                            "acked_comment": result,
-                            "type": "ack"
-                        });
-
-                    }
-
-                });
-
-
-            };
-            $scope.force_close = function (id) {
-
-                bootbox.confirm("Proceeding will mark this alarm as closed. Are you sure you want to continue?", function (result) {
-                    if (result) {
-
-                        $scope.update_and_call_back('patch', '/api/alarm/' + id + '/', {"type": "close"});
-
-                    }
-
-                });
-
-
-            };
-            /* for Threshold alert settings */
-            $scope.threshold_change = function (id, value, element) {
-
-                var param = {};
-                switch (element) {
-                    case 'oper':
-                        param = {"oper": parseInt(value)};
-                        break;
-                    case 'value':
-                        param = {"value": value};
-                        break;
-                    case 'toggle':
-                        param = {"enabled": value};
-                        break;
-                }
-                $scope.update_and_call_back('patch', $scope.config.api + id + '/', param);
-
-            };
-            /* for WMS Global settings */
-            $scope.wms_value_change = function (id, value, element, locked) {
-                if (locked) {
-                    return false;
-                }
-
-                var param = {};
-                switch (element) {
-                    case 'value':
-                        param = {"value": value};
-                        break;
-                    case 'toggle':
-                        param = {"value": value};
-                        break;
-                }
-                $scope.update_and_call_back('patch', $scope.config.api + id + '/', param);
-
-            };
-            /* for User Permission settings */
-            $scope.change_permission = function (codename, status) {
-
-                $scope.update_and_call_back('post', $scope.config.api, {"codename": codename, "enabled": status});
-
-            };
-            /* for agent management */
-            $scope.toggle_ebility = function (etld_id, status) {
-
-                $scope.update_and_call_back('patch', $scope.config.api + etld_id + '/', {"enable": status});
-
-            };
-            /* for Controller Authorization */
-            $scope.authorize = function (id, status) {
-
-                $scope.update_and_call_back('patch', "/api/controllerauthorization/" + id.toString() + "/", {"authorized": status});
-
-            };
-
-            /* for email settings table at profile and accounts pages */
-            $scope.update_email_settings = function (id, interval, enable) {
-
-                var param = {"update_interval": interval, "enabled": enable};
-                $scope.update_and_call_back('patch', $scope.config.api + id.toString() + "/", param);
-
-            };
-
-            /* for Session history clear session */
-            $scope.clear_session = function (id) {
-
-                $scope.update_and_call_back('patch', $scope.config.api + id.toString() + "/", {"expire": true});
-
-            };
-
-            /* for group table remove user */
-            $scope.remove_user = function (id) {
-                var param = {'id': $scope.config.group_id, 'groupname': $scope.config.group_name, 'member': false};
-                bootbox.confirm("<i class='fa fa-fw fa-info'></i> Are you sure you want to remove the user from " + $scope.config.group_name + " ?", function (result) {
-                    if (result) {
-                        $scope.update_and_call_back('post', '/api/wmsauth/users/' + id + '/groups/', param);
-                    }
-                });
-
-
-            };
-
-            /* for Accounts table remove group */
-            $scope.remove_group = function (id, name) {
-                var param = {'id': id, 'groupname': name, 'member': false};
-                bootbox.confirm("<i class='fa fa-fw fa-info'></i> Are you sure you want to remove the user from " + name + " ?", function (result) {
-                    if (result) {
-                        $scope.update_and_call_back('post', '/api/wmsauth/users/' + $scope.config.user_id + '/groups/', param);
-                    }
-
-                });
-
-
-            };
-
+            /* Sample function called from table rows */
             /* for Custom dashboard share to group and users tables */
             $scope.toggle_dash = function (id, share) {
 
@@ -495,9 +318,6 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
                 $scope.update_and_call_back('post', $scope.config.api, param);
 
             };
-
-
-
 
 
             /* update the table operations and call the data back */
@@ -511,6 +331,7 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
 
             };
 
+            /* Reload table data as for each 15 mins */
             $scope.Timer = null;
 
             $scope.StartTimer = function () {
@@ -518,7 +339,7 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
                 $scope.Timer = $interval(function () {
                     console.log("Table Reloading...");
                     $scope.get_data();
-                }, $rootScope.refresh * 60 * 1000);
+                }, 15 * 60 * 1000);
             };
 
 
@@ -565,7 +386,7 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
                 }
                 return pages;
             }
-
+            /* Pagination calculations */
             function calculatePageNumber(i, currentPage, paginationRange, totalPages) {
                 var halfWay = Math.ceil(paginationRange / 2);
                 if (i === paginationRange) {
@@ -588,10 +409,11 @@ window[appName].directive("wmsTables", function (http, message, pin, wmslib, $ro
 
         },
         link: function (scope, element, attrs) {
+            /* Re initiate table when configuration changed */
             scope.$watch('config', function () {
                 scope.default_page();
             });
-
+            /* Destroy Timer while table destructed */
             scope.$on('$destroy', function () {
                 console.log(scope.config.type + " Table destroyed");
                 scope.StopTimer();
