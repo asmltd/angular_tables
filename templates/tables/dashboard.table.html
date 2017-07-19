@@ -1,0 +1,45 @@
+<table class="table table-bordered">
+    <tbody>
+    <tr>
+
+        <th ng-click="colum_sort('name')" class="sortable">Name
+            <i class="fa fa-fw" ng-class="get_col_icon('name')"></i></th>
+        <th ng-click="colum_sort('ext_ip')" class="sortable">IP Address
+            <i class="fa fa-fw" ng-class="get_col_icon('ext_ip')"></i></th>
+        <th ng-click="colum_sort('cluster')"  class="sortable">Cluster
+            <i class="fa fa-fw" ng-class="get_col_icon('cluster')"></i>
+        </th>
+        <th ng-click="colum_sort('model')" class="sortable">Model
+            <i class="fa fa-fw" ng-class="get_col_icon('model')"></i>
+        </th>
+        <th ng-click="colum_sort('version')" class="sortable">Version
+            <i class="fa fa-fw" ng-class="get_col_icon('version')"></i>
+        </th>
+        <th ng-click="colum_sort('role')" class="sortable">Role
+            <i class="fa fa-fw" ng-class="get_col_icon('role')"></i>
+        </th>
+    </tr>
+    <tr></tr>
+    <tr ng-repeat="row in list">
+
+        <td>
+            <a ui-sref="controller({id:row.id})">
+                <span ng-bind-html="to_trusted(row.hostname)"></span>
+            </a>
+        </td>
+        <td ng-bind-html="to_trusted(row.ip)"> </td>
+        <td ng-show="config.location!='cluster'">
+            <a ui-sref="cluster({id:row.cluster_id})">
+                <span ng-bind-html="to_trusted(row.cluster)"></span>
+            </a>
+        </td>
+        <td ng-bind-html="to_trusted(row.model)">  </td>
+        <td ng-bind-html="to_trusted(row.version)">  </td>
+        <td ng-bind-html="to_trusted(row.role)">  </td>
+
+    </tr>
+    <tr ng-show="!list.length">
+        <td colspan="100">No Controller to display</td>
+    </tr>
+    </tbody>
+</table>
